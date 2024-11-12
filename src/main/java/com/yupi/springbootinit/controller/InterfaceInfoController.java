@@ -1,11 +1,9 @@
 package com.yupi.springbootinit.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kano.kanoapiclientsdk.client.KanoApiClient;
 import com.yupi.springbootinit.annotation.AuthCheck;
-import com.yupi.springbootinit.common.BaseResponse;
-import com.yupi.springbootinit.common.DeleteRequest;
-import com.yupi.springbootinit.common.ErrorCode;
-import com.yupi.springbootinit.common.ResultUtils;
+import com.yupi.springbootinit.common.*;
 import com.yupi.springbootinit.constant.UserConstant;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
@@ -14,10 +12,12 @@ import com.yupi.springbootinit.model.dto.interfaceInfo.InterfaceInfoQueryRequest
 import com.yupi.springbootinit.model.dto.interfaceInfo.InterfaceInfoUpdateRequest;
 import com.yupi.springbootinit.model.entity.InterfaceInfo;
 import com.yupi.springbootinit.model.entity.User;
+import com.yupi.springbootinit.model.enums.InterfaceStatusEnum;
 import com.yupi.springbootinit.model.vo.InterfaceInfoVO;
 import com.yupi.springbootinit.service.InterfaceInfoService;
 import com.yupi.springbootinit.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +25,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * 帖子接口
+ * 接口管理
  *
  * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
  * @from <a href="https://yupi.icu">编程导航知识星球</a>
@@ -40,6 +40,9 @@ public class InterfaceInfoController {
 
     @Resource
     private UserService userService;
+    
+    @Resource
+    private KanoApiClient kanoApiClient;
 
     // region 增删改查
 
@@ -241,5 +244,68 @@ public class InterfaceInfoController {
 //        boolean result = interfaceInfoService.updateById(interfaceInfo);
 //        return ResultUtils.success(result);
 //    }
+
+    /**
+     * 发布接口（仅管理员）
+     *
+     * @param idRequest
+     * @return
+     */
+    @PostMapping("/online")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> onlineInterfaceInfo(@RequestBody IdRequest idRequest,HttpServletRequest request) {
+        if (idRequest == null || idRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //校验接口是否存在
+        Long id = idRequest.getId();
+        InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
+        if (oldInterfaceInfo == null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        
+        //校验接口是否可用
+        com.kano.kanoapiclientsdk.model.User user = new com.kano.kanoapiclientsdk.model.User();
+        user.setName("kano");
+        String userNameByPost = kanoApiClient.getUserNameByPost(user);
+        if (StringUtils.isBlank(userNameByPost)){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"接口验证失败");
+        }
+
+        //修改接口状态
+        InterfaceInfo interfaceInfo = new InterfaceInfo();
+        interfaceInfo.setId(id);
+        interfaceInfo.setStatus(InterfaceStatusEnum.ONLINE.getValue());
+        boolean result = interfaceInfoService.updateById(interfaceInfo);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 下线接口（仅管理员）
+     *
+     * @param idRequest
+     * @return
+     */
+    @PostMapping("/offline")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> offlineInterfaceInfo(@RequestBody IdRequest idRequest,HttpServletRequest request) {
+        if (idRequest == null || idRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        //校验接口是否存在
+        Long id = idRequest.getId();
+        InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
+        if (oldInterfaceInfo == null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+
+        //修改接口状态
+        InterfaceInfo interfaceInfo = new InterfaceInfo();
+        interfaceInfo.setId(id);
+        interfaceInfo.setStatus(InterfaceStatusEnum.OFFLINE.getValue());
+        boolean result = interfaceInfoService.updateById(interfaceInfo);
+        return ResultUtils.success(result);
+    }
 
 }

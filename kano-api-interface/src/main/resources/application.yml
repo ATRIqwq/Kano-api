@@ -1,0 +1,9 @@
+server:
+  port: 8121
+  servlet:
+    context-path: /api
+
+kano:
+  api:
+    access-key: kano
+    secret-key: abcdefg

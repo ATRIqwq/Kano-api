@@ -1,16 +1,11 @@
 package com.yupi.springbootinit.model.vo;
 
-import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.yupi.springbootinit.model.entity.InterfaceInfo;
+import com.kano.kanoapicommon.model.entity.InterfaceInfo;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
 
 /**
  * 帖子视图
@@ -85,6 +80,11 @@ public class InterfaceInfoVO implements Serializable {
      * 创建人信息
      */
     private UserVO user;
+
+    /**
+     * 接口调用次数
+     */
+    private Integer totalNum;
 
 
     /**
